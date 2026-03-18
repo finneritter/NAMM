@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "namm",
+	"version": "${version}",
+	"name": "NAMM",
+	"description": "Not Another Macro Mod - Razer Synapse-style macro creation for Minecraft",
+	"authors": [
+		"finnritter"
+	],
+	"contact": {},
+	"license": "MIT",
+	"icon": "assets/namm/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.namm.NammMod"
+		],
+		"modmenu": [
+			"com.namm.NammModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "namm.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.2",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
