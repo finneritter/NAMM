@@ -3,6 +3,7 @@ package com.namm.executor;
 import com.namm.NammMod;
 import com.namm.input.InputSimulator;
 import com.namm.model.Macro;
+import com.namm.ui.ToastManager;
 import net.minecraft.client.Minecraft;
 
 import java.util.concurrent.*;
@@ -35,6 +36,7 @@ public class MacroPlaybackState {
 		Future<?> future = executor.submit(task);
 		activeMacros.put(name, future);
 		NammMod.LOGGER.debug("Started macro: {} (loop={})", name, loop);
+		ToastManager.get().post(macro.getName() + " enabled", ToastManager.ToastType.SUCCESS, ToastManager.Category.MACRO_TOGGLED);
 	}
 
 	public void stopMacro(String name) {
@@ -42,6 +44,7 @@ public class MacroPlaybackState {
 		if (future != null) {
 			future.cancel(true);
 			NammMod.LOGGER.debug("Stopped macro: {}", name);
+			ToastManager.get().post(name + " disabled", ToastManager.ToastType.INFO, ToastManager.Category.MACRO_TOGGLED);
 		}
 	}
 

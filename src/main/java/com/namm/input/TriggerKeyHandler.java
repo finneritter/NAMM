@@ -6,6 +6,7 @@ import com.namm.model.ChatCommand;
 import com.namm.model.Macro;
 import com.namm.model.MacroProfile;
 import com.namm.model.PlaybackMode;
+import com.namm.ui.ToastManager;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
@@ -93,6 +94,7 @@ public class TriggerKeyHandler {
 					} else {
 						client.player.connection.sendChat(message);
 					}
+					ToastManager.get().post("Sent " + message, ToastManager.ToastType.SUCCESS, ToastManager.Category.CHAT_COMMAND);
 				}
 			}
 		}
