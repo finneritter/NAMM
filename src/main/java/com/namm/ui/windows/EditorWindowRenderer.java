@@ -167,10 +167,10 @@ public class EditorWindowRenderer implements WindowContent {
             MacroStep step = steps.get(i);
 
             if (i == recordingIndex) {
-                g.fill(x + 1, rowY, x + width - 1, rowY + ROW_HEIGHT, 0x303D3658);
+                g.fill(x + 1, rowY, x + width - 1, rowY + ROW_HEIGHT, NammTheme.get().hover());
             }
             if (i == delayEditIndex) {
-                g.fill(x + 1, rowY, x + width - 1, rowY + ROW_HEIGHT, 0x30584D3D);
+                g.fill(x + 1, rowY, x + width - 1, rowY + ROW_HEIGHT, NammTheme.get().hover());
             }
 
             NammRenderer.drawText(g, x + 6, rowY + 4, (i + 1) + ".", false);
