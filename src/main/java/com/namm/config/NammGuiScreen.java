@@ -177,7 +177,7 @@ public class NammGuiScreen extends Screen {
 
 			@Override
 			public void profileSwitched(String profileName) {
-				// Future: toast notification
+				ToastManager.get().post("Switched to " + profileName, ToastManager.ToastType.INFO, ToastManager.Category.PROFILE_SWITCHED);
 			}
 
 			@Override
@@ -732,8 +732,13 @@ public class NammGuiScreen extends Screen {
 		new Thread(() -> {
 			String result = org.lwjgl.util.tinyfd.TinyFileDialogs.tinyfd_saveFileDialog("Export Macros", "namm-macros.json", null, "JSON files");
 			if (result != null) {
-				String json = MacroSerializer.exportToJson(NammConfig.getInstance().getMacros());
-				try { java.nio.file.Files.writeString(Path.of(result), json); } catch (Exception ignored) {}
+				List<Macro> macros = NammConfig.getInstance().getMacros();
+				String json = MacroSerializer.exportToJson(macros);
+				try {
+					java.nio.file.Files.writeString(Path.of(result), json);
+					int count = macros.size();
+					ToastManager.get().post("Exported " + count + " macros", ToastManager.ToastType.SUCCESS, ToastManager.Category.IMPORT_EXPORT);
+				} catch (Exception ignored) {}
 			}
 		}, "NAMM-Export").start();
 	}
@@ -745,7 +750,9 @@ public class NammGuiScreen extends Screen {
 				try {
 					String json = java.nio.file.Files.readString(Path.of(result));
 					List<Macro> imported = MacroSerializer.importFromJson(json);
+					int count = imported.size();
 					addImportedMacros(imported);
+					ToastManager.get().post("Imported " + count + " macros", ToastManager.ToastType.SUCCESS, ToastManager.Category.IMPORT_EXPORT);
 				} catch (Exception ignored) {}
 			}
 		}, "NAMM-Import").start();

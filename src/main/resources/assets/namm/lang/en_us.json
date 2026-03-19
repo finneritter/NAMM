@@ -37,5 +37,20 @@
 	"namm.action.key_press": "Key Press",
 	"namm.action.key_release": "Key Release",
 	"namm.action.mouse_click": "Mouse Click",
-	"namm.action.mouse_release": "Mouse Release"
+	"namm.action.mouse_release": "Mouse Release",
+	"key.categories.namm": "NAMM",
+	"key.category.namm.namm": "NAMM",
+	"key.namm.open_menu": "Open NAMM Menu",
+	"namm.infobar.no_profile": "None",
+	"namm.infobar.active_macros": "%d active",
+	"namm.infobar.ping_na": "N/A",
+	"namm.notifications.title": "Notification Settings",
+	"namm.notifications.infobar_visibility": "Info Bar Visibility",
+	"namm.notifications.menu_only": "Menu Only",
+	"namm.notifications.always_visible": "Always Visible",
+	"namm.notifications.category.macro_toggled": "Macro Toggled",
+	"namm.notifications.category.chat_command": "Chat Command Executed",
+	"namm.notifications.category.profile_switched": "Profile Switched",
+	"namm.notifications.category.import_export": "Import/Export",
+	"namm.notifications.category.errors": "Errors"
 }
