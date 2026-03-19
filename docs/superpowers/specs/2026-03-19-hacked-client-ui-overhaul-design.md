@@ -174,8 +174,8 @@ Static utility class. Every method reads colors from `NammTheme.get()`. No metho
 Bundle a TrueType font via Minecraft's resource pack font system. The mod's assets include:
 
 ```
-src/main/resources/assets/namm/
-    font/
+src/main/resources/
+    assets/namm/font/
         inter.ttf               -- Inter font file (bundled in mod JAR)
     assets/minecraft/font/
         default.json            -- Overrides MC's default font provider
@@ -343,6 +343,14 @@ Left-clicking the bell icon in the info bar mutes ALL toasts regardless of categ
 
 Via `HudRenderCallback` — toasts are visible whether the config screen is open or not.
 
+### Thread Safety
+
+Toast events originate from macro executor daemon threads (e.g., macro toggled) and must be marshalled to the render thread for display. `ToastManager` uses a `ConcurrentLinkedQueue` for incoming toast events. The render method drains the queue each frame and moves events into the active display list. Only the render thread reads/modifies the display list.
+
+### Ping Update Frequency
+
+`InfoBar` caches the ping value and refreshes it every 2 seconds (120 ticks), not every frame.
+
 ---
 
 ## Notification Settings Screen (`NotificationSettingsScreen`)
@@ -437,6 +445,35 @@ All changes are client-side rendering. Testing approach:
 7. **Mod compatibility** — test with Sodium and ModMenu installed
 
 ---
+
+## Lang File Additions
+
+New translation keys to add to `assets/namm/lang/en_us.json`:
+
+```json
+{
+  "key.categories.namm": "NAMM",
+  "key.namm.open_menu": "Open NAMM Menu",
+  "namm.infobar.no_profile": "None",
+  "namm.infobar.active_macros": "%d active",
+  "namm.infobar.ping_na": "N/A",
+  "namm.notifications.title": "Notification Settings",
+  "namm.notifications.infobar_visibility": "Info Bar Visibility",
+  "namm.notifications.menu_only": "Menu Only",
+  "namm.notifications.always_visible": "Always Visible",
+  "namm.notifications.category.macro_toggled": "Macro Toggled",
+  "namm.notifications.category.chat_command": "Chat Command Executed",
+  "namm.notifications.category.profile_switched": "Profile Switched",
+  "namm.notifications.category.import_export": "Import/Export",
+  "namm.notifications.category.errors": "Errors"
+}
+```
+
+---
+
+## Pre-Implementation
+
+- Update `CLAUDE.md` to remove stale YACL references and reflect current architecture before implementation begins. The current CLAUDE.md lists "YACL 3.8.1" in the tech stack and states "All UI through YACL" — both are outdated (YACL was removed in a prior version). This must be corrected so the implementation agent has accurate project context.
 
 ## Post-Implementation
 
