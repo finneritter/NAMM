@@ -58,18 +58,42 @@ src/main/java/com/namm/
  * Each window's content rendering is encapsulated behind this interface.
  * NammWindow handles the container (drag, collapse, scroll, themed panel);
  * the content renderer handles what goes inside.
+ *
+ * All input methods return true if the event was consumed.
  */
 interface WindowContent {
     int getContentHeight();
     void render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY);
     boolean mouseClicked(int x, int y, int button);
+    boolean mouseReleased(int x, int y, int button);
+    boolean mouseScrolled(int x, int y, double amount);
+    boolean mouseDragged(int x, int y, int button, double deltaX, double deltaY);
     boolean keyPressed(int keyCode, int scanCode, int modifiers);
+    boolean charTyped(char chr, int modifiers);
+
+    /**
+     * Called when the window is collapsed/expanded. Content renderers that own
+     * EditBox widgets must add/remove them from the parent Screen here.
+     * The Screen reference is passed so renderers can call addRenderableWidget()
+     * and removeWidget() as needed.
+     */
+    void onCollapseChanged(Screen parentScreen, boolean collapsed);
 }
 ```
 
+`NammWindow` holds a reference to the parent `Screen` (set at construction) and calls `content.onCollapseChanged(screen, collapsed)` when collapse state toggles. Content renderers that own EditBoxes (EditorWindowRenderer, ChatCommandWindowRenderer) use this callback to manage widget lifecycle. Content renderers without widgets (MacroWindowRenderer, ProfileWindowRenderer) provide no-op implementations.
+
+### HUD Callback Registration
+
+`NammMod.onInitializeClient()` registers `HudRenderCallback.EVENT.register(...)` which delegates to static singleton instances of `ToastManager` and `InfoBar`. These singletons are accessible from both the HUD callback (for in-game overlay rendering) and from `NammGuiScreen` (for rendering within the config screen). The callback checks `InfoBar.isAlwaysVisible()` before rendering the info bar outside the config screen; `ToastManager` always renders via the callback regardless.
+
+### ModMenu Integration
+
+`NammModMenuIntegration` currently returns the custom `NammGuiScreen` (YACL was removed in a prior version). This is unchanged — the ModMenu settings button continues to open `NammGuiScreen`. No YACL dependency exists.
+
 ### Rendering Pipeline
 
-- **Config screen open:** `NammGuiScreen` renders the 4 `NammWindow` instances + `InfoBar` at the top.
+- **Config screen open:** `NammGuiScreen` renders the 4 `NammWindow` instances + `InfoBar` at the top. The HUD callback skips `InfoBar` rendering to avoid double-drawing (checks `Minecraft.getInstance().screen instanceof NammGuiScreen`).
 - **Config screen closed:** `HudRenderCallback` renders `InfoBar` (if "always visible") and `ToastManager` toasts.
 - All drawing goes through `NammRenderer` which reads colors from `NammTheme`.
 
@@ -152,15 +176,37 @@ Bundle a TrueType font via Minecraft's resource pack font system. The mod's asse
 ```
 src/main/resources/assets/namm/
     font/
-        inter.ttf               -- Inter font file (or similar clean sans-serif)
-        default.json            -- Font provider definition
+        inter.ttf               -- Inter font file (bundled in mod JAR)
+    assets/minecraft/font/
+        default.json            -- Overrides MC's default font provider
 ```
 
-The `default.json` font provider registers the TTF under a custom font ID (`namm:default`). All text rendering in `NammRenderer` uses this font ID instead of Minecraft's default.
+**Font plumbing:** Minecraft 1.21's font system resolves fonts by resource location. The global default font used by `GuiGraphics.drawString()` is `minecraft:default`, loaded from `assets/minecraft/font/default.json`. To use a custom TTF everywhere in our UI without requiring a separate `Font` object, we override `minecraft:default` by placing our font provider JSON at `assets/minecraft/font/default.json` within the mod's resources. This adds our TTF as an additional font provider to MC's default font — MC merges providers from all resource packs/mods, so our TTF takes precedence for the character ranges it covers while MC's built-in font handles anything we don't (e.g., special symbols).
+
+The font provider JSON:
+```json
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "namm:inter.ttf",
+      "shift": [0, 1],
+      "size": 10.0,
+      "oversample": 4.0
+    }
+  ]
+}
+```
+
+The `oversample: 4.0` ensures high-resolution glyph rendering. The `shift` value may need fine-tuning to align with MC's text baseline.
+
+With this approach, `NammRenderer.drawText()` simply calls `GuiGraphics.drawString()` with the standard `Minecraft.getInstance().font` — no special Font object needed. The TTF applies only when NAMM is installed; uninstalling the mod restores MC's default font.
+
+**Caveat:** This overrides the default font globally while NAMM is loaded. If this causes issues with other mods' text rendering, an alternative is to register a namespaced font (`namm:ui`) via `assets/namm/font/ui.json` and obtain a `Font` instance from `Minecraft.getInstance().fontManager.createFont(ResourceLocation.fromNamespaceAndPath("namm", "ui"))` to pass explicitly to draw calls. The global override is simpler and is the initial approach; we fall back to the namespaced approach if compatibility issues arise during testing.
 
 ### Font Choice
 
-Inter (or Roboto) — clean, modern sans-serif that matches the reference screenshots. Open source, freely redistributable. Multiple weights not needed; regular weight at the sizes we're rendering (8-12px) is sufficient.
+Inter — clean, modern sans-serif that matches the reference screenshots. Open source (SIL Open Font License), freely redistributable. Regular weight only; at the sizes we render (8-12px scaled) this is sufficient.
 
 ---
 
@@ -175,6 +221,25 @@ A single PNG texture (`assets/namm/textures/gui/icons.png`) containing all UI ic
 - Collapse dots (`...`)
 
 Rendered at 1:1 pixel ratio via `GuiGraphics.blit()` for pixel-perfect crispness. Atlas size: 128x128 with 16x16 icon slots.
+
+### Sprite Layout
+
+The atlas is a 128x128 PNG organized as an 8x8 grid of 16x16 slots:
+
+| Slot (col, row) | Icon | Notes |
+|-----------------|------|-------|
+| (0, 0) | Bell | Normal state |
+| (1, 0) | Bell muted | Slash overlay |
+| (2, 0) | Sun | Light theme indicator |
+| (3, 0) | Moon | Dark theme indicator |
+| (0, 1) | Dot green | Enabled/success |
+| (1, 1) | Dot red | Disabled/error |
+| (2, 1) | Dot blue | Info |
+| (0, 2) | Toggle on | Pill shape, accent fill |
+| (1, 2) | Toggle off | Pill shape, muted fill |
+| (0, 3) | Collapse dots | `...` pattern |
+
+Remaining slots are reserved. The atlas is created as part of the implementation — a simple pixel art PNG. Both light and dark themes use the same atlas; icon colors are baked into the texture (status dots) or tinted at render time via vertex color (bell, sun/moon).
 
 ---
 
@@ -226,7 +291,7 @@ Slim horizontal panel at the top-left of the screen. Same themed panel style as 
 1. **"NAMM"** — label in accent color
 2. **Active profile** — profile name or "None"
 3. **Active macros** — e.g., "3 active"
-4. **Ping** — from `PlayerInfo.getLatency()`, e.g., "24ms"
+4. **Ping** — from `PlayerInfo.getLatency()`, e.g., "24ms". Displays "N/A" in single-player (where latency returns 0)
 5. **Clock** — real-world time in `HH:mm` format
 
 **Right side (top-right of screen):**
@@ -256,7 +321,7 @@ Small themed panels in the bottom-right corner, stacking upward. Each toast cont
 - Fade in: 200ms (alpha 0 → 1)
 - Hold: 3 seconds
 - Fade out: 300ms (alpha 1 → 0)
-- Max visible: 4 toasts. When a 5th arrives, the oldest fades out immediately.
+- Max visible: 4 toasts. When a 5th arrives, the oldest is instantly removed (no fade) to make room.
 
 ### Notification Categories
 
@@ -282,11 +347,21 @@ Via `HudRenderCallback` — toasts are visible whether the config screen is open
 
 ## Notification Settings Screen (`NotificationSettingsScreen`)
 
-Opened by right-clicking the bell icon in the info bar. A simple themed panel (not a full Minecraft Screen — rendered as an overlay within the NAMM GUI) containing:
+Opened by right-clicking the bell icon in the info bar. Rendered as a modal overlay within `NammGuiScreen` (not a separate Minecraft `Screen`).
+
+### Rendering & Input Model
+
+`NammGuiScreen` maintains a `boolean showingNotificationSettings` flag. When true:
+- The `NotificationSettingsScreen` overlay renders on top of everything else (after windows, after info bar).
+- A semi-transparent scrim covers the background to visually separate the overlay.
+- All mouse/key input is intercepted by the overlay first. Clicks outside the overlay panel close it (the click is consumed and does NOT propagate to windows underneath).
+- While the overlay is open, the 4 draggable windows do not receive input events.
+
+### Contents
 
 - **Info bar visibility** toggle: "Menu only" / "Always visible"
 - **Category toggles** — one row per notification category with a toggle switch
-- **Close button** or click-outside-to-close
+- Themed panel with same visual style as the windows
 
 All settings persisted in `namm.json`.
 
@@ -296,7 +371,7 @@ All settings persisted in `namm.json`.
 
 ### Current State
 
-The menu toggle is hardcoded to Right Shift in `TriggerKeyHandler`.
+The menu toggle is hardcoded to Right Shift via raw `GLFW.glfwGetKey()` polling in `NammMod.onInitializeClient()` (not in `TriggerKeyHandler`). The current code polls every client tick and opens the screen on key press.
 
 ### New Approach
 
@@ -310,7 +385,7 @@ KeyMapping openMenu = KeyBindingHelper.registerKeyBinding(
 
 This places the keybind in Minecraft's Options → Controls → Key Binds under a "NAMM" category. Users can rebind it to any key through MC's standard UI.
 
-`TriggerKeyHandler` checks this `KeyMapping` instead of hardcoding `GLFW_KEY_RIGHT_SHIFT`.
+The tick handler in `NammMod` changes from raw GLFW polling to `openMenu.consumeClick()`. Note: `consumeClick()` returns true once per press and auto-debounces, which is the correct behavior for a toggle (the current code manually tracks previous key state for edge detection — `consumeClick()` replaces that logic). The `NammMod` tick handler is updated, not `TriggerKeyHandler` (which handles macro/chat command triggers and remains unchanged).
 
 ---
 
@@ -360,3 +435,11 @@ All changes are client-side rendering. Testing approach:
 5. **Keybind** — rebind in MC controls, verify menu opens with new key
 6. **Backwards compatibility** — load an existing `namm.json` from v1.5.0, verify no data loss
 7. **Mod compatibility** — test with Sodium and ModMenu installed
+
+---
+
+## Post-Implementation
+
+- Update `CLAUDE.md` to reflect the new `ui/` package structure and architectural patterns.
+- Update `README.md` if user-facing features change (keybind configuration, theme toggle).
+- Bump version to 2.0.0 in `gradle.properties`.
