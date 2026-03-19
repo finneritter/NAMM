@@ -19,6 +19,16 @@ public class NammConfig {
 	private String activeProfileName;
 	private List<ChatCommand> chatCommands;
 
+	// Theme and UI preferences
+	private String theme = "dark";
+	private String infoBarVisibility = "menu_only";
+	private boolean notificationsMuted = false;
+	private boolean notifMacroToggled = true;
+	private boolean notifChatCommand = true;
+	private boolean notifProfileSwitched = true;
+	private boolean notifImportExport = true;
+	private boolean notifErrors = true;
+
 	// Window positions (-1 = auto)
 	private int macroWinX = -1, macroWinY = -1;
 	private int profileWinX = -1, profileWinY = -1;
@@ -54,6 +64,14 @@ public class NammConfig {
 		editorWinY = wrapper.editorWinY;
 		chatWinX = wrapper.chatWinX;
 		chatWinY = wrapper.chatWinY;
+		theme = wrapper.theme;
+		infoBarVisibility = wrapper.infoBarVisibility;
+		notificationsMuted = wrapper.notificationsMuted;
+		notifMacroToggled = wrapper.notifMacroToggled;
+		notifChatCommand = wrapper.notifChatCommand;
+		notifProfileSwitched = wrapper.notifProfileSwitched;
+		notifImportExport = wrapper.notifImportExport;
+		notifErrors = wrapper.notifErrors;
 		NammMod.LOGGER.info("Loaded {} macros, {} profiles, {} chat commands", macros.size(), profiles.size(), chatCommands.size());
 	}
 
@@ -71,6 +89,14 @@ public class NammConfig {
 		wrapper.editorWinY = editorWinY;
 		wrapper.chatWinX = chatWinX;
 		wrapper.chatWinY = chatWinY;
+		wrapper.theme = theme;
+		wrapper.infoBarVisibility = infoBarVisibility;
+		wrapper.notificationsMuted = notificationsMuted;
+		wrapper.notifMacroToggled = notifMacroToggled;
+		wrapper.notifChatCommand = notifChatCommand;
+		wrapper.notifProfileSwitched = notifProfileSwitched;
+		wrapper.notifImportExport = notifImportExport;
+		wrapper.notifErrors = notifErrors;
 		MacroSerializer.saveWrapper(wrapper, configPath);
 	}
 
@@ -100,4 +126,21 @@ public class NammConfig {
 	public int getChatWinX() { return chatWinX; }
 	public int getChatWinY() { return chatWinY; }
 	public void setChatWinPos(int x, int y) { chatWinX = x; chatWinY = y; }
+
+	public String getTheme() { return theme; }
+	public void setTheme(String theme) { this.theme = theme; }
+	public String getInfoBarVisibility() { return infoBarVisibility; }
+	public void setInfoBarVisibility(String v) { this.infoBarVisibility = v; }
+	public boolean isNotificationsMuted() { return notificationsMuted; }
+	public void setNotificationsMuted(boolean v) { this.notificationsMuted = v; }
+	public boolean isNotifMacroToggled() { return notifMacroToggled; }
+	public void setNotifMacroToggled(boolean v) { this.notifMacroToggled = v; }
+	public boolean isNotifChatCommand() { return notifChatCommand; }
+	public void setNotifChatCommand(boolean v) { this.notifChatCommand = v; }
+	public boolean isNotifProfileSwitched() { return notifProfileSwitched; }
+	public void setNotifProfileSwitched(boolean v) { this.notifProfileSwitched = v; }
+	public boolean isNotifImportExport() { return notifImportExport; }
+	public void setNotifImportExport(boolean v) { this.notifImportExport = v; }
+	public boolean isNotifErrors() { return notifErrors; }
+	public void setNotifErrors(boolean v) { this.notifErrors = v; }
 }

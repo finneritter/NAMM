@@ -50,6 +50,8 @@ public class MacroSerializer {
 			if (wrapper.macros == null) wrapper.macros = new ArrayList<>();
 			if (wrapper.profiles == null) wrapper.profiles = new ArrayList<>();
 			if (wrapper.chatCommands == null) wrapper.chatCommands = new ArrayList<>();
+			if (wrapper.theme == null) wrapper.theme = "dark";
+			if (wrapper.infoBarVisibility == null) wrapper.infoBarVisibility = "menu_only";
 			migrateSteps(wrapper.macros);
 			return wrapper;
 		} catch (JsonSyntaxException e) {
@@ -123,5 +125,13 @@ public class MacroSerializer {
 		public int editorWinY = -1;
 		public int chatWinX = -1;
 		public int chatWinY = -1;
+		public String theme = "dark";
+		public String infoBarVisibility = "menu_only";
+		public boolean notificationsMuted = false;
+		public boolean notifMacroToggled = true;
+		public boolean notifChatCommand = true;
+		public boolean notifProfileSwitched = true;
+		public boolean notifImportExport = true;
+		public boolean notifErrors = true;
 	}
 }
