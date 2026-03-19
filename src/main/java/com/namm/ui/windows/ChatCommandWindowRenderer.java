@@ -75,17 +75,13 @@ public class ChatCommandWindowRenderer implements WindowContent {
 
             NammRenderer.drawToggleIndicator(g, x + 3, rowY + 3, ROW_HEIGHT - 6, isOn);
 
-            String name = truncate(mc, cmd.getName(), width - 48);
+            String name = truncate(cmd.getName(), width - 48);
             NammRenderer.drawText(g, x + 10, rowY + 4, name, isOn);
 
             String triggerName = cmd.getTriggerKeyCode() == -1 ? ""
                     : KeyNames.getKeyName(cmd.getTriggerKeyCode(), cmd.isTriggerMouse());
             if (!triggerName.isEmpty()) {
                 NammRenderer.drawTextRight(g, x + width - 5, rowY + 4, triggerName, false);
-            }
-
-            if (i < commands.size() - 1 && editingCommand != cmd) {
-                NammRenderer.drawSeparator(g, x + 8, rowY + ROW_HEIGHT - 1, width - 16);
             }
 
             // Inline editor
@@ -136,7 +132,7 @@ public class ChatCommandWindowRenderer implements WindowContent {
                 boolean hoverDone = mouseX >= x && mouseX < x + width
                         && mouseY >= doneRowY && mouseY < doneRowY + ROW_HEIGHT;
                 NammRenderer.drawRow(g, x, doneRowY, width, ROW_HEIGHT, hoverDone);
-                NammRenderer.drawTextAccent(g, x + width / 2 - mc.font.width("Done") / 2, doneRowY + 4, "Done");
+                NammRenderer.drawTextAccent(g, x + width / 2 - NammRenderer.fontWidth("Done") / 2, doneRowY + 4, "Done");
             }
         }
 
@@ -331,9 +327,9 @@ public class ChatCommandWindowRenderer implements WindowContent {
         callback.editChatCommand(cmd);
     }
 
-    private static String truncate(Minecraft mc, String text, int maxW) {
-        if (mc.font.width(text) <= maxW) return text;
-        while (mc.font.width(text + "..") > maxW && text.length() > 1)
+    private static String truncate(String text, int maxW) {
+        if (NammRenderer.fontWidth(text) <= maxW) return text;
+        while (NammRenderer.fontWidth(text + "..") > maxW && text.length() > 1)
             text = text.substring(0, text.length() - 1);
         return text + "..";
     }

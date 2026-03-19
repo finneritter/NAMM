@@ -15,9 +15,10 @@ public class ToastManager {
     private static final long FADE_IN_MS = 200;
     private static final long HOLD_MS = 3000;
     private static final long FADE_OUT_MS = 300;
-    private static final int TOAST_WIDTH = 180;
-    private static final int TOAST_HEIGHT = 24;
+    private static final int TOAST_WIDTH = 170;
+    private static final int TOAST_HEIGHT = 22;
     private static final int TOAST_PADDING = 4;
+    private static final int TOAST_RADIUS = 3;
 
     public enum Category { MACRO_TOGGLED, CHAT_COMMAND, PROFILE_SWITCHED, IMPORT_EXPORT, ERROR }
     public enum ToastType { SUCCESS, ERROR, INFO }
@@ -77,20 +78,24 @@ public class ToastManager {
             int ty = baseY - (index + 1) * (TOAST_HEIGHT + TOAST_PADDING);
             int alphaInt = (int)(alpha * 255) << 24;
 
+            // Background and border
             int bg = (t.panelBg() & 0x00FFFFFF) | alphaInt;
-            g.fill(x, ty, x + TOAST_WIDTH, ty + TOAST_HEIGHT, bg);
+            int border = (t.border() & 0x00FFFFFF) | alphaInt;
+            NammRenderer.drawRoundedRect(g, x, ty, TOAST_WIDTH, TOAST_HEIGHT, TOAST_RADIUS, bg);
+            NammRenderer.drawRoundedOutline(g, x, ty, TOAST_WIDTH, TOAST_HEIGHT, TOAST_RADIUS, border);
 
+            // Status dot (small rounded rect approximating a circle)
             int dotColor = switch (toast.type) {
                 case SUCCESS -> t.toastSuccess();
                 case ERROR -> t.toastError();
                 case INFO -> t.toastInfo();
             };
             dotColor = (dotColor & 0x00FFFFFF) | alphaInt;
-            int dotY = ty + (TOAST_HEIGHT - 6) / 2;
-            g.fill(x + 8, dotY, x + 14, dotY + 6, dotColor);
+            int dotY = ty + (TOAST_HEIGHT - 5) / 2;
+            NammRenderer.drawRoundedRect(g, x + 6, dotY, 5, 5, 2, dotColor);
 
             int textColor = (t.textPrimary() & 0x00FFFFFF) | alphaInt;
-            g.drawString(Minecraft.getInstance().font, toast.message, x + 20, ty + 8, textColor, false);
+            g.drawString(Minecraft.getInstance().font, toast.message, x + 16, ty + (TOAST_HEIGHT - 8) / 2, textColor, false);
         }
     }
 

@@ -52,6 +52,8 @@ public class MacroSerializer {
 			if (wrapper.chatCommands == null) wrapper.chatCommands = new ArrayList<>();
 			if (wrapper.theme == null) wrapper.theme = "dark";
 			if (wrapper.infoBarVisibility == null) wrapper.infoBarVisibility = "menu_only";
+			if (wrapper.arrayListPosition == null) wrapper.arrayListPosition = "top_right";
+			if (wrapper.accentColor == null) wrapper.accentColor = "purple";
 			migrateSteps(wrapper.macros);
 			return wrapper;
 		} catch (JsonSyntaxException e) {
@@ -125,6 +127,13 @@ public class MacroSerializer {
 		public int editorWinY = -1;
 		public int chatWinX = -1;
 		public int chatWinY = -1;
+		public int settingsWinX = -1;
+		public int settingsWinY = -1;
+		public boolean arrayListEnabled = true;
+		public String arrayListPosition = "top_right";
+		public boolean arrayListShowMacros = true;
+		public boolean arrayListShowChatCommands = true;
+		public String accentColor = "purple";
 		public String theme = "dark";
 		public String infoBarVisibility = "menu_only";
 		public boolean notificationsMuted = false;

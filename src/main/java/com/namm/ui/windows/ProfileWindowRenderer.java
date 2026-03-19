@@ -105,11 +105,7 @@ public class ProfileWindowRenderer implements WindowContent {
             NammRenderer.drawText(g, x + 20, rowY + 4, profile.getName(), isActive);
 
             if (isActive) {
-                NammRenderer.drawTextAccent(g, x + width - 5 - mc.font.width("ACTIVE"), rowY + 4, "ACTIVE");
-            }
-
-            if (i < profiles.size() - 1 || !isExpanded) {
-                NammRenderer.drawSeparator(g, x + 8, rowY + ROW_HEIGHT - 1, width - 16);
+                NammRenderer.drawTextAccent(g, x + width - 5 - NammRenderer.fontWidth("ACTIVE"), rowY + 4, "ACTIVE");
             }
 
             if (isExpanded) {
@@ -124,7 +120,7 @@ public class ProfileWindowRenderer implements WindowContent {
                     NammRenderer.drawRow(g, x, mRowY, width, ROW_HEIGHT, mHovered);
                     NammRenderer.drawCheckbox(g, x + 18, mRowY + 3, 10, macroActive);
 
-                    String mName = truncate(mc, macro.getName(), width - 40);
+                    String mName = truncate(macro.getName(), width - 40);
                     NammRenderer.drawText(g, x + 32, mRowY + 4, mName, macroActive);
                 }
             }
@@ -275,9 +271,9 @@ public class ProfileWindowRenderer implements WindowContent {
     public boolean isCreatingProfile() { return creatingProfile; }
     public EditBox getProfileNameBox() { return profileNameBox; }
 
-    private static String truncate(Minecraft mc, String text, int maxW) {
-        if (mc.font.width(text) <= maxW) return text;
-        while (mc.font.width(text + "..") > maxW && text.length() > 1)
+    private static String truncate(String text, int maxW) {
+        if (NammRenderer.fontWidth(text) <= maxW) return text;
+        while (NammRenderer.fontWidth(text + "..") > maxW && text.length() > 1)
             text = text.substring(0, text.length() - 1);
         return text + "..";
     }

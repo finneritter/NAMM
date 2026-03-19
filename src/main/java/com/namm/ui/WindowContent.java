@@ -14,4 +14,8 @@ public interface WindowContent {
     boolean keyPressed(int keyCode, int scanCode, int modifiers);
     boolean charTyped(char chr, int modifiers);
     void onCollapseChanged(Screen parentScreen, boolean collapsed);
+
+    /** Render floating elements (popups, dropdowns) outside the window's scissor region. */
+    default void renderOverflow(GuiGraphics g, int winX, int winY, int winW, int winH,
+                                int mouseX, int mouseY, float delta, double scrollOffset) {}
 }

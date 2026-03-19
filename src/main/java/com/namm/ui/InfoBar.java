@@ -1,24 +1,28 @@
 package com.namm.ui;
 
 import com.namm.config.NammConfig;
-import com.namm.model.Macro;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Top info bar matching jbdsgn "Your Client" screenshots.
+ * Single pill: NAMM · [head] playerName · profile · HH:mm
+ */
 public class InfoBar {
     private static final InfoBar INSTANCE = new InfoBar();
     public static InfoBar get() { return INSTANCE; }
 
-    private static final int BAR_HEIGHT = 20;
-    private static final int PADDING = 6;
-    private static final int ITEM_GAP = 12;
+    private static final int BAR_HEIGHT = 16;
+    private static final int PADDING = 4;
+    private static final int ITEM_GAP = 6;
+    private static final int HEAD_SIZE = 8;
+    private static final int DOT_GAP = 6;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
-
-    private int cachedPing = 0;
-    private long lastPingUpdateMs = 0;
 
     public boolean isAlwaysVisible() {
         return "always".equals(NammConfig.getInstance().getInfoBarVisibility());
@@ -29,93 +33,64 @@ public class InfoBar {
         NammTheme t = NammTheme.get();
         Minecraft mc = Minecraft.getInstance();
 
-        // Update ping cache (every 2s wall clock)
-        long now = System.currentTimeMillis();
-        if (now - lastPingUpdateMs > 2000) {
-            lastPingUpdateMs = now;
-            cachedPing = getPing(mc);
-        }
-
-        // Prepare strings
+        String playerName = mc.player != null ? mc.player.getName().getString() : "Player";
         String profileName = cfg.getActiveProfileName() != null ? cfg.getActiveProfileName() : "None";
-        long activeMacroCount = cfg.getMacros().stream().filter(Macro::isEnabled).count();
-        String macroCountStr = activeMacroCount + " active";
-        String pingStr = cachedPing > 0 ? cachedPing + "ms" : "N/A";
         String timeStr = LocalTime.now().format(TIME_FMT);
 
-        // Left bar
-        int leftX = 4, barY = 4;
-        int leftBarWidth = PADDING + mc.font.width("NAMM") + ITEM_GAP
-                + mc.font.width(profileName) + ITEM_GAP
-                + mc.font.width(macroCountStr) + ITEM_GAP
-                + mc.font.width(pingStr) + ITEM_GAP
-                + mc.font.width(timeStr) + PADDING;
+        // Calculate left pill width: NAMM · [head] name · profile · time
+        int nammW = NammRenderer.fontWidth("NAMM");
+        int nameW = HEAD_SIZE + 3 + NammRenderer.fontWidth(playerName);
+        int profileW = NammRenderer.fontWidth(profileName);
+        int timeW = NammRenderer.fontWidth(timeStr);
+        int dotW = 2; // dot separator width
+        int leftBarWidth = PADDING + nammW + DOT_GAP + dotW + DOT_GAP
+                + nameW + DOT_GAP + dotW + DOT_GAP
+                + profileW + DOT_GAP + dotW + DOT_GAP
+                + timeW + PADDING;
 
+        int leftX = 4, barY = 4;
         NammRenderer.drawPanel(g, leftX, barY, leftBarWidth, BAR_HEIGHT);
 
         int cx = leftX + PADDING;
         int textY = barY + (BAR_HEIGHT - 8) / 2;
+        int dotY = barY + (BAR_HEIGHT - 2) / 2;
+
+        // NAMM label
         NammRenderer.drawTextAccent(g, cx, textY, "NAMM");
-        cx += mc.font.width("NAMM") + ITEM_GAP;
-        NammRenderer.drawText(g, cx, textY, profileName, true);
-        cx += mc.font.width(profileName) + ITEM_GAP;
-        NammRenderer.drawText(g, cx, textY, macroCountStr, false);
-        cx += mc.font.width(macroCountStr) + ITEM_GAP;
-        NammRenderer.drawText(g, cx, textY, pingStr, false);
-        cx += mc.font.width(pingStr) + ITEM_GAP;
+        cx += nammW + DOT_GAP;
+
+        // · separator
+        NammRenderer.drawDotSeparator(g, cx, dotY);
+        cx += dotW + DOT_GAP;
+
+        // Player head + name
+        if (mc.player != null) {
+            renderPlayerHead(g, mc, cx, barY + (BAR_HEIGHT - HEAD_SIZE) / 2, HEAD_SIZE);
+        }
+        cx += HEAD_SIZE + 3;
+        NammRenderer.drawText(g, cx, textY, playerName, false);
+        cx += NammRenderer.fontWidth(playerName) + DOT_GAP;
+
+        // · separator
+        NammRenderer.drawDotSeparator(g, cx, dotY);
+        cx += dotW + DOT_GAP;
+
+        // Profile
+        NammRenderer.drawText(g, cx, textY, profileName, false);
+        cx += profileW + DOT_GAP;
+
+        // · separator
+        NammRenderer.drawDotSeparator(g, cx, dotY);
+        cx += dotW + DOT_GAP;
+
+        // Time
         NammRenderer.drawText(g, cx, textY, timeStr, false);
-
-        // Right bar
-        int rightBarWidth = PADDING + IconType.SIZE + ITEM_GAP + IconType.SIZE + PADDING;
-        int rightX = screenWidth - rightBarWidth - 4;
-        NammRenderer.drawPanel(g, rightX, barY, rightBarWidth, BAR_HEIGHT);
-        int iconY = barY + (BAR_HEIGHT - IconType.SIZE) / 2;
-        int sunMoonX = rightX + PADDING;
-        NammRenderer.drawIcon(g, sunMoonX, iconY, t.isDark() ? IconType.MOON : IconType.SUN);
-        int bellX = sunMoonX + IconType.SIZE + ITEM_GAP;
-        NammRenderer.drawIcon(g, bellX, iconY, cfg.isNotificationsMuted() ? IconType.BELL_MUTED : IconType.BELL);
     }
 
-    public boolean mouseClicked(double mouseX, double mouseY, int button, int screenWidth) {
-        int rightBarWidth = PADDING + IconType.SIZE + ITEM_GAP + IconType.SIZE + PADDING;
-        int rightX = screenWidth - rightBarWidth - 4;
-        int barY = 4;
-        int iconY = barY + (BAR_HEIGHT - IconType.SIZE) / 2;
-
-        int sunMoonX = rightX + PADDING;
-        if (mouseX >= sunMoonX && mouseX < sunMoonX + IconType.SIZE
-                && mouseY >= iconY && mouseY < iconY + IconType.SIZE && button == 0) {
-            NammTheme.get().toggle();
-            return true;
-        }
-
-        int bellX = sunMoonX + IconType.SIZE + ITEM_GAP;
-        if (mouseX >= bellX && mouseX < bellX + IconType.SIZE
-                && mouseY >= iconY && mouseY < iconY + IconType.SIZE) {
-            if (button == 0) {
-                NammConfig cfg = NammConfig.getInstance();
-                cfg.setNotificationsMuted(!cfg.isNotificationsMuted());
-                cfg.save();
-                return true;
-            }
-            if (button == 1) return true; // right-click handled by caller
-        }
-        return false;
-    }
-
-    public boolean wasRightClickOnBell(double mouseX, double mouseY, int screenWidth) {
-        int rightBarWidth = PADDING + IconType.SIZE + ITEM_GAP + IconType.SIZE + PADDING;
-        int rightX = screenWidth - rightBarWidth - 4;
-        int barY = 4;
-        int iconY = barY + (BAR_HEIGHT - IconType.SIZE) / 2;
-        int bellX = rightX + PADDING + IconType.SIZE + ITEM_GAP;
-        return mouseX >= bellX && mouseX < bellX + IconType.SIZE
-                && mouseY >= iconY && mouseY < iconY + IconType.SIZE;
-    }
-
-    private int getPing(Minecraft mc) {
-        if (mc.player == null || mc.getConnection() == null) return 0;
-        PlayerInfo info = mc.getConnection().getPlayerInfo(mc.player.getUUID());
-        return info != null ? info.getLatency() : 0;
+    private void renderPlayerHead(GuiGraphics g, Minecraft mc, int x, int y, int size) {
+        if (mc.player == null) return;
+        Identifier skinTexture = mc.player.getSkin().body().texturePath();
+        g.blit(RenderPipelines.GUI_TEXTURED, skinTexture, x, y, 8.0f, 8.0f, size, size, 8, 8, 64, 64);
+        g.blit(RenderPipelines.GUI_TEXTURED, skinTexture, x, y, 40.0f, 8.0f, size, size, 8, 8, 64, 64);
     }
 }

@@ -180,7 +180,7 @@ public class EditorWindowRenderer implements WindowContent {
             } else if (i == delayEditIndex && delayBox != null) {
                 // EditBox renders itself via widget system
             } else {
-                String desc = truncate(mc, step.getDisplaySummary(), width - 70);
+                String desc = truncate(step.getDisplaySummary(), width - 70);
                 NammRenderer.drawText(g, x + 22, rowY + 4, desc, true);
             }
 
@@ -197,9 +197,6 @@ public class EditorWindowRenderer implements WindowContent {
                 boolean hoverUp = mouseX >= btnRight - 38 && mouseX < btnRight - 28 && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT;
                 NammRenderer.drawText(g, btnRight - 36, rowY + 4, "\u2191", hoverUp);
             }
-            if (i < steps.size() - 1) {
-                NammRenderer.drawSeparator(g, x + 6, rowY + ROW_HEIGHT - 1, width - 12);
-            }
         }
 
         // "+ Add Step"
@@ -214,10 +211,7 @@ public class EditorWindowRenderer implements WindowContent {
             delayBox.render(g, mouseX, mouseY, delta);
         }
 
-        // Add step popup
-        if (addPopup) {
-            renderAddPopup(g, mouseX, mouseY, addStepY);
-        }
+        // Add step popup rendered in renderOverflow() to avoid scissor clipping
     }
 
     private void renderAddPopup(GuiGraphics g, int mouseX, int mouseY, int addStepY) {
@@ -242,6 +236,15 @@ public class EditorWindowRenderer implements WindowContent {
         NammRenderer.drawTextCentered(g, popupX + popupW / 2, popupY + 5, "Input", true);
         NammRenderer.drawSeparator(g, popupX + 4, popupY + popupH / 2 - 1, popupW - 8);
         NammRenderer.drawTextCentered(g, popupX + popupW / 2, popupY + popupH / 2 + 4, "Delay", true);
+    }
+
+    @Override
+    public void renderOverflow(GuiGraphics g, int winX, int winY, int winW, int winH,
+                               int mouseX, int mouseY, float delta, double scrollOffset) {
+        if (!addPopup || editingMacro == null) return;
+        List<MacroStep> steps = editingMacro.getSteps();
+        int addStepY = stepAreaTop + (steps.size() * ROW_HEIGHT) - (int) scrollOffset;
+        renderAddPopup(g, mouseX, mouseY, addStepY);
     }
 
     @Override
@@ -538,9 +541,9 @@ public class EditorWindowRenderer implements WindowContent {
         return editingMacro != null || recordingIndex >= 0 || delayEditIndex >= 0 || addPopup;
     }
 
-    private static String truncate(Minecraft mc, String text, int maxW) {
-        if (mc.font.width(text) <= maxW) return text;
-        while (mc.font.width(text + "..") > maxW && text.length() > 1)
+    private static String truncate(String text, int maxW) {
+        if (NammRenderer.fontWidth(text) <= maxW) return text;
+        while (NammRenderer.fontWidth(text + "..") > maxW && text.length() > 1)
             text = text.substring(0, text.length() - 1);
         return text + "..";
     }

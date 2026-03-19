@@ -10,7 +10,8 @@ public enum IconType {
     DOT_BLUE(2, 1),
     TOGGLE_ON(0, 2),
     TOGGLE_OFF(1, 2),
-    COLLAPSE_DOTS(0, 3);
+    COLLAPSE_DOTS(0, 3),
+    GEAR(1, 3);
 
     public final int u;
     public final int v;

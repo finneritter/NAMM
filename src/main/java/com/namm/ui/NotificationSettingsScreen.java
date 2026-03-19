@@ -1,7 +1,6 @@
 package com.namm.ui;
 
 import com.namm.config.NammConfig;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 public class NotificationSettingsScreen {
@@ -11,8 +10,9 @@ public class NotificationSettingsScreen {
 
     private int panelX, panelY, panelHeight;
 
+    // "All" toggle at index 0, then individual toggles
     private static final String[] LABELS = {
-        "Info Bar Visibility",
+        "All",
         "Macro Toggled",
         "Chat Command Executed",
         "Profile Switched",
@@ -46,9 +46,9 @@ public class NotificationSettingsScreen {
             NammRenderer.drawText(g, panelX + PADDING, rowY + 5, LABELS[i], true);
 
             boolean on = getToggleState(cfg, i);
-            String stateStr = i == 0 ? (on ? "Always" : "Menu") : (on ? "ON" : "OFF");
+            String stateStr = on ? "ON" : "OFF";
             int stateColor = on ? t.toggleOn() : t.toggleOff();
-            int sw = Minecraft.getInstance().font.width(stateStr);
+            int sw = NammRenderer.fontWidth(stateStr);
             NammRenderer.drawTextColored(g, panelX + PANEL_WIDTH - PADDING - sw, rowY + 5, stateStr, stateColor);
         }
     }
@@ -78,7 +78,7 @@ public class NotificationSettingsScreen {
 
     private boolean getToggleState(NammConfig cfg, int index) {
         return switch (index) {
-            case 0 -> "always".equals(cfg.getInfoBarVisibility());
+            case 0 -> allOn(cfg); // "All"
             case 1 -> cfg.isNotifMacroToggled();
             case 2 -> cfg.isNotifChatCommand();
             case 3 -> cfg.isNotifProfileSwitched();
@@ -88,9 +88,24 @@ public class NotificationSettingsScreen {
         };
     }
 
+    private boolean allOn(NammConfig cfg) {
+        return cfg.isNotifMacroToggled()
+                && cfg.isNotifChatCommand()
+                && cfg.isNotifProfileSwitched()
+                && cfg.isNotifImportExport()
+                && cfg.isNotifErrors();
+    }
+
     private void toggleState(NammConfig cfg, int index) {
         switch (index) {
-            case 0 -> cfg.setInfoBarVisibility("always".equals(cfg.getInfoBarVisibility()) ? "menu_only" : "always");
+            case 0 -> { // "All" toggle
+                boolean newState = !allOn(cfg);
+                cfg.setNotifMacroToggled(newState);
+                cfg.setNotifChatCommand(newState);
+                cfg.setNotifProfileSwitched(newState);
+                cfg.setNotifImportExport(newState);
+                cfg.setNotifErrors(newState);
+            }
             case 1 -> cfg.setNotifMacroToggled(!cfg.isNotifMacroToggled());
             case 2 -> cfg.setNotifChatCommand(!cfg.isNotifChatCommand());
             case 3 -> cfg.setNotifProfileSwitched(!cfg.isNotifProfileSwitched());

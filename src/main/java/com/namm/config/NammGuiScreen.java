@@ -13,6 +13,7 @@ import com.namm.ui.windows.ChatCommandWindowRenderer;
 import com.namm.ui.windows.EditorWindowRenderer;
 import com.namm.ui.windows.MacroWindowRenderer;
 import com.namm.ui.windows.ProfileWindowRenderer;
+import com.namm.ui.windows.SettingsWindowRenderer;
 import com.namm.ui.windows.WindowCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -42,18 +43,24 @@ public class NammGuiScreen extends Screen {
 	private static final int PROFILE_WIN_WIDTH = 160;
 	private static final int EDITOR_WIN_WIDTH = 220;
 	private static final int CHAT_WIN_WIDTH = 180;
+	private static final int SETTINGS_WIN_WIDTH = 180;
 
 	// Windows
 	private NammWindow macroWindow;
 	private NammWindow profileWindow;
 	private NammWindow editorWindow;
 	private NammWindow chatWindow;
+	private NammWindow settingsWindow;
 
 	// Content renderers
 	private MacroWindowRenderer macroRenderer;
 	private ProfileWindowRenderer profileRenderer;
 	private EditorWindowRenderer editorRenderer;
 	private ChatCommandWindowRenderer chatRenderer;
+	private SettingsWindowRenderer settingsRenderer;
+
+	// Settings window state
+	private boolean settingsWindowOpen = false;
 
 	// Context menu state (cross-window, stays here)
 	private int contextMenuIndex = -1;
@@ -85,6 +92,7 @@ public class NammGuiScreen extends Screen {
 		profileRenderer = new ProfileWindowRenderer(cb);
 		editorRenderer = new EditorWindowRenderer(cb);
 		chatRenderer = new ChatCommandWindowRenderer(cb);
+		settingsRenderer = new SettingsWindowRenderer();
 
 		// Load persisted positions, auto-position if -1
 		int macroX = cfg.getMacroWinX();
@@ -128,14 +136,25 @@ public class NammGuiScreen extends Screen {
 		chatWindow = new NammWindow("Chat Commands", CHAT_WIN_WIDTH, chatX, chatY, this);
 		chatWindow.setContent(chatRenderer);
 
+		int settingsX = cfg.getSettingsWinX();
+		int settingsY = cfg.getSettingsWinY();
+		if (settingsX < 0 || settingsY < 0) {
+			settingsX = this.width / 2 - SETTINGS_WIN_WIDTH / 2;
+			settingsY = 30;
+		}
+		settingsWindow = new NammWindow("Settings", SETTINGS_WIN_WIDTH, settingsX, settingsY, this);
+		settingsWindow.setContent(settingsRenderer);
+
 		// Clamp to screen
 		macroWindow.clampToScreen(this.width, this.height);
 		profileWindow.clampToScreen(this.width, this.height);
 		editorWindow.clampToScreen(this.width, this.height);
 		chatWindow.clampToScreen(this.width, this.height);
+		settingsWindow.clampToScreen(this.width, this.height);
 
 		// Reset state
 		contextMenuIndex = -1;
+		settingsWindowOpen = false;
 		notificationSettingsOpen = false;
 		notificationSettings = new NotificationSettingsScreen();
 	}
@@ -231,11 +250,15 @@ public class NammGuiScreen extends Screen {
 
 		chatWindow.render(g, mouseX, mouseY, delta);
 
+		if (settingsWindowOpen) {
+			settingsWindow.render(g, mouseX, mouseY, delta);
+		}
+
 		// Info bar
 		InfoBar.get().render(g, this.width, this.height);
 
-		// Import/export buttons
-		renderImportExport(g, mouseX, mouseY);
+		// Bottom bar buttons
+		renderBottomBar(g, mouseX, mouseY);
 
 		// Context menu on top
 		if (contextMenuIndex >= 0) {
@@ -249,21 +272,21 @@ public class NammGuiScreen extends Screen {
 		if (notificationSettingsOpen) {
 			notificationSettings.render(g, this.width, this.height, mouseX, mouseY);
 		}
+
 	}
 
 	// --- Import/Export rendering ---
 
-	private void renderImportExport(GuiGraphics g, int mouseX, int mouseY) {
-		Minecraft mc = Minecraft.getInstance();
+	private void renderBottomBar(GuiGraphics g, int mouseX, int mouseY) {
 		NammTheme t = NammTheme.get();
 		int y = this.height - 20;
 		int centerX = this.width / 2;
-		String[] labels = {"Export", "Import NAMM", "Import Razer"};
+		String[] labels = {"Settings", "Notifications", "Export", "Import NAMM", "Import Razer"};
 		int totalW = 0;
 		int gap = 8;
 		int[] widths = new int[labels.length];
 		for (int i = 0; i < labels.length; i++) {
-			widths[i] = mc.font.width(labels[i]) + 12;
+			widths[i] = NammRenderer.fontWidth(labels[i]) + 12;
 			totalW += widths[i];
 		}
 		totalW += gap * (labels.length - 1);
@@ -328,11 +351,8 @@ public class NammGuiScreen extends Screen {
 			return true;
 		}
 
-		// Info bar (check right-click on bell for notification settings)
-		if (InfoBar.get().mouseClicked(mouseX, mouseY, button, this.width)) {
-			return true;
-		}
-		if (button == 1 && InfoBar.get().wasRightClickOnBell(mouseX, mouseY, this.width)) {
+		// Check if settings renderer requested notification settings
+		if (settingsRenderer.isNotificationSettingsRequested()) {
 			notificationSettingsOpen = true;
 			return true;
 		}
@@ -361,6 +381,15 @@ public class NammGuiScreen extends Screen {
 			profileRenderer.cancelProfileCreation();
 		}
 
+		// Settings window
+		if (settingsWindowOpen && settingsWindow.mouseClicked(mouseX, mouseY, button)) {
+			// Check again after click processing
+			if (settingsRenderer.isNotificationSettingsRequested()) {
+				notificationSettingsOpen = true;
+			}
+			return true;
+		}
+
 		// Editor window (check first since it may overlap)
 		if (editorRenderer.getEditingMacro() != null && editorWindow.mouseClicked(mouseX, mouseY, button)) {
 			return true;
@@ -375,8 +404,8 @@ public class NammGuiScreen extends Screen {
 		// Chat window
 		if (chatWindow.mouseClicked(mouseX, mouseY, button)) return true;
 
-		// Import/export buttons
-		if (handleImportExportClick(mouseX, mouseY)) return true;
+		// Bottom bar buttons
+		if (handleBottomBarClick(mouseX, mouseY)) return true;
 
 		return super.mouseClicked(event, bl);
 	}
@@ -387,12 +416,52 @@ public class NammGuiScreen extends Screen {
 		double mouseY = event.y();
 		int button = event.button();
 
-		if (editorRenderer.getEditingMacro() != null && editorWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
-		if (macroWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
-		if (profileWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
-		if (chatWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) return true;
+		NammWindow dragged = null;
+		if (settingsWindowOpen && settingsWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = settingsWindow;
+		if (dragged == null && editorRenderer.getEditingMacro() != null && editorWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = editorWindow;
+		if (dragged == null && macroWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = macroWindow;
+		if (dragged == null && profileWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = profileWindow;
+		if (dragged == null && chatWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = chatWindow;
+
+		if (dragged != null && dragged.isDragging()) {
+			snapToNeighbors(dragged);
+			return true;
+		}
+		if (dragged != null) return true;
 
 		return super.mouseDragged(event, deltaX, deltaY);
+	}
+
+	private static final int SNAP_DISTANCE = 8;
+
+	private void snapToNeighbors(NammWindow target) {
+		NammWindow[] others = getAllWindowsExcept(target);
+		int tx = target.getX(), ty = target.getY();
+		int tw = target.getWidth(), th = target.getHeight();
+
+		for (NammWindow other : others) {
+			int ox = other.getX(), oy = other.getY();
+			int ow = other.getWidth(), oh = other.getHeight();
+
+			// Snap right edge of target to left edge of other
+			if (Math.abs((tx + tw) - ox) < SNAP_DISTANCE) tx = ox - tw - 1;
+			// Snap left edge of target to right edge of other
+			if (Math.abs(tx - (ox + ow)) < SNAP_DISTANCE) tx = ox + ow + 1;
+			// Snap left edges aligned
+			if (Math.abs(tx - ox) < SNAP_DISTANCE) tx = ox;
+			// Snap top edges aligned
+			if (Math.abs(ty - oy) < SNAP_DISTANCE) ty = oy;
+			// Snap bottom of target to top of other
+			if (Math.abs((ty + th) - oy) < SNAP_DISTANCE) ty = oy - th - 1;
+			// Snap top of target to bottom of other
+			if (Math.abs(ty - (oy + oh)) < SNAP_DISTANCE) ty = oy + oh + 1;
+		}
+		target.setPosition(tx, ty);
+	}
+
+	private NammWindow[] getAllWindowsExcept(NammWindow target) {
+		NammWindow[] all = { macroWindow, profileWindow, editorWindow, chatWindow, settingsWindow };
+		return java.util.Arrays.stream(all).filter(w -> w != target).toArray(NammWindow[]::new);
 	}
 
 	@Override
@@ -403,7 +472,8 @@ public class NammGuiScreen extends Screen {
 
 		boolean anyReleased = false;
 
-		if (editorRenderer.getEditingMacro() != null && editorWindow.mouseReleased(mouseX, mouseY, button)) anyReleased = true;
+		if (settingsWindowOpen && settingsWindow.mouseReleased(mouseX, mouseY, button)) anyReleased = true;
+		if (!anyReleased && editorRenderer.getEditingMacro() != null && editorWindow.mouseReleased(mouseX, mouseY, button)) anyReleased = true;
 		if (!anyReleased && macroWindow.mouseReleased(mouseX, mouseY, button)) anyReleased = true;
 		if (!anyReleased && profileWindow.mouseReleased(mouseX, mouseY, button)) anyReleased = true;
 		if (!anyReleased && chatWindow.mouseReleased(mouseX, mouseY, button)) anyReleased = true;
@@ -417,6 +487,7 @@ public class NammGuiScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+		if (settingsWindowOpen && settingsWindow.mouseScrolled(mx, my, sy)) return true;
 		if (editorRenderer.getEditingMacro() != null && editorWindow.mouseScrolled(mx, my, sy)) return true;
 		if (macroWindow.mouseScrolled(mx, my, sy)) return true;
 		if (profileWindow.mouseScrolled(mx, my, sy)) return true;
@@ -654,16 +725,15 @@ public class NammGuiScreen extends Screen {
 
 	// --- Import/Export ---
 
-	private boolean handleImportExportClick(double mx, double my) {
-		Minecraft mc = Minecraft.getInstance();
+	private boolean handleBottomBarClick(double mx, double my) {
 		int y = this.height - 20;
 		int centerX = this.width / 2;
-		String[] labels = {"Export", "Import NAMM", "Import Razer"};
+		String[] labels = {"Settings", "Notifications", "Export", "Import NAMM", "Import Razer"};
 		int totalW = 0;
 		int gap = 8;
 		int[] widths = new int[labels.length];
 		for (int i = 0; i < labels.length; i++) {
-			widths[i] = mc.font.width(labels[i]) + 12;
+			widths[i] = NammRenderer.fontWidth(labels[i]) + 12;
 			totalW += widths[i];
 		}
 		totalW += gap * (labels.length - 1);
@@ -673,9 +743,11 @@ public class NammGuiScreen extends Screen {
 			int bw = widths[i];
 			if (mx >= bx && mx < bx + bw && my >= y && my < y + 16) {
 				switch (i) {
-					case 0 -> doExport();
-					case 1 -> doImport();
-					case 2 -> doImportRazer();
+					case 0 -> settingsWindowOpen = !settingsWindowOpen;
+					case 1 -> notificationSettingsOpen = true;
+					case 2 -> doExport();
+					case 3 -> doImport();
+					case 4 -> doImportRazer();
 				}
 				return true;
 			}
@@ -723,6 +795,7 @@ public class NammGuiScreen extends Screen {
 		cfg.setProfileWinPos(profileWindow.getX(), profileWindow.getY());
 		cfg.setEditorWinPos(editorWindow.getX(), editorWindow.getY());
 		cfg.setChatWinPos(chatWindow.getX(), chatWindow.getY());
+		cfg.setSettingsWinPos(settingsWindow.getX(), settingsWindow.getY());
 		cfg.save();
 	}
 

@@ -41,6 +41,8 @@ public class NammWindow {
         g.enableScissor(x, contentTop, x + width, contentBottom);
         content.render(g, x, contentTop - (int) scrollOffset, width, mouseX, mouseY, delta);
         g.disableScissor();
+        // Render overflow elements (popups, dropdowns) outside scissor
+        content.renderOverflow(g, x, y, width, h, mouseX, mouseY, delta, scrollOffset);
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {

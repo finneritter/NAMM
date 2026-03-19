@@ -2,34 +2,53 @@ package com.namm.ui;
 
 import com.namm.config.NammConfig;
 
+/**
+ * Color palette matched to jbdsgn "Your Client" screenshots.
+ * Flat, minimal, neutral grays with very subtle borders.
+ * Always dark mode.
+ */
 public class NammTheme {
     private static final NammTheme INSTANCE = new NammTheme();
     public static NammTheme get() { return INSTANCE; }
 
-    public boolean isDark() {
-        return "dark".equals(NammConfig.getInstance().getTheme());
+    // Panel backgrounds — semi-transparent, flat
+    public int panelBg() { return 0xD91C1C1E; }
+    public int headerBg() { return 0xEB202022; }
+
+    // Text — neutral grays, no accent tints
+    public int textPrimary() { return 0xFFD2D2D7; }
+    public int textSecondary() { return 0xFF78787D; }
+
+    // Accent — configurable color
+    public int accent() {
+        return switch (NammConfig.getInstance().getAccentColor()) {
+            case "blue" -> 0xFF5588D4;
+            case "green" -> 0xFF55B87A;
+            case "red" -> 0xFFD45555;
+            case "orange" -> 0xFFD4A055;
+            case "white" -> 0xFFD2D2D7;
+            default -> 0xFF7C6FE0; // purple
+        };
     }
 
-    public void toggle() {
-        NammConfig cfg = NammConfig.getInstance();
-        cfg.setTheme(isDark() ? "light" : "dark");
-        cfg.save();
-    }
+    // Interaction
+    public int hover() { return 0x14FFFFFF; }
+    public int border() { return 0x0FFFFFFF; }
 
-    public int panelBg() { return isDark() ? 0xD9181820 : 0xD9FFFFFF; }
-    public int headerBg() { return isDark() ? 0xF21E1E26 : 0xF2F5F5F8; }
-    public int textPrimary() { return isDark() ? 0xFFE0E0E8 : 0xFF1A1A2E; }
-    public int textSecondary() { return isDark() ? 0xFF6E6E78 : 0xFF8888A0; }
-    public int accent() { return 0xFF7C6FE0; }
-    public int hover() { return isDark() ? 0x1FFFFFFF : 0x0F000000; }
-    public int border() { return isDark() ? 0x0FFFFFFF : 0x14000000; }
-    public int toggleOn() { return 0xFF7C6FE0; }
-    public int toggleOff() { return isDark() ? 0xFF3A3A42 : 0xFFC8C8D0; }
-    public int separator() { return isDark() ? 0x12FFFFFF : 0x0F000000; }
+    // Toggles
+    public int toggleOn() { return 0xFFD2D2D7; }
+    public int toggleOff() { return 0xFF3A3A3E; }
+
+    // Separators (header/content divider)
+    public int separator() { return 0x0CFFFFFF; }
+
+    // Status colors
     public int destructive() { return 0xFFD45555; }
     public int toastSuccess() { return 0xFF55B87A; }
     public int toastError() { return 0xFFD45555; }
     public int toastInfo() { return 0xFF5588D4; }
-    public int screenOverlay() { return isDark() ? 0x90000000 : 0x60000000; }
-    public int scrim() { return 0x80000000; }
+
+    // Overlays — very subtle, game world should show through
+    public int screenOverlay() { return 0x40000000; }
+    public int scrim() { return 0x60000000; }
 }

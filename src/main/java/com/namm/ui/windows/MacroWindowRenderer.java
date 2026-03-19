@@ -59,7 +59,7 @@ public class MacroWindowRenderer implements WindowContent {
 
             NammRenderer.drawToggleIndicator(g, x + 3, rowY + 3, ROW_HEIGHT - 6, isOn);
 
-            String name = truncate(mc, macro.getName(), width - 48);
+            String name = truncate(macro.getName(), width - 48);
             NammRenderer.drawText(g, x + 10, rowY + 4, name, isOn);
 
             String triggerName = macro.getTriggerKeyCode() == -1 ? ""
@@ -68,9 +68,6 @@ public class MacroWindowRenderer implements WindowContent {
                 NammRenderer.drawTextRight(g, x + width - 5, rowY + 4, triggerName, false);
             }
 
-            if (i < macros.size() - 1) {
-                NammRenderer.drawSeparator(g, x + 8, rowY + ROW_HEIGHT - 1, width - 16);
-            }
         }
 
         int newY = y + (macros.size() * ROW_HEIGHT);
@@ -132,9 +129,9 @@ public class MacroWindowRenderer implements WindowContent {
     @Override
     public void onCollapseChanged(Screen parentScreen, boolean collapsed) { }
 
-    private static String truncate(Minecraft mc, String text, int maxW) {
-        if (mc.font.width(text) <= maxW) return text;
-        while (mc.font.width(text + "..") > maxW && text.length() > 1)
+    private static String truncate(String text, int maxW) {
+        if (NammRenderer.fontWidth(text) <= maxW) return text;
+        while (NammRenderer.fontWidth(text + "..") > maxW && text.length() > 1)
             text = text.substring(0, text.length() - 1);
         return text + "..";
     }
