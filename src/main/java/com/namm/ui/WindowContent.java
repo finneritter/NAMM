@@ -18,4 +18,7 @@ public interface WindowContent {
     /** Render floating elements (popups, dropdowns) outside the window's scissor region. */
     default void renderOverflow(GuiGraphics g, int winX, int winY, int winW, int winH,
                                 int mouseX, int mouseY, float delta, double scrollOffset) {}
+
+    /** Handle clicks on overflow elements (popups rendered outside window bounds). */
+    default boolean mouseClickedOverflow(int x, int y, int button) { return false; }
 }

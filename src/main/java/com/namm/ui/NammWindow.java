@@ -46,6 +46,12 @@ public class NammWindow {
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // Check overflow elements first (popups that render outside window bounds)
+        if (!collapsed && content != null) {
+            if (content.mouseClickedOverflow((int) mouseX, (int) mouseY, button)) {
+                return true;
+            }
+        }
         int h = getHeight();
         // Header
         if (mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + HEADER_HEIGHT) {

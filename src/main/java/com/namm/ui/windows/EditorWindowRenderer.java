@@ -262,6 +262,17 @@ public class EditorWindowRenderer implements WindowContent {
     }
 
     @Override
+    public boolean mouseClickedOverflow(int mouseX, int mouseY, int button) {
+        // Handle add popup clicks — popup renders outside window bounds via renderOverflow
+        if (addPopup && editingMacro != null) {
+            if (handleAddPopupClick(mouseX, mouseY)) return true;
+            addPopup = false;
+            return true; // consume click that dismissed popup
+        }
+        return false;
+    }
+
+    @Override
     public boolean mouseClicked(int mouseX, int mouseY, int button) {
         if (editingMacro == null) return false;
 
@@ -291,12 +302,7 @@ public class EditorWindowRenderer implements WindowContent {
             }
         }
 
-        // Add popup
-        if (addPopup) {
-            if (handleAddPopupClick(mouseX, mouseY)) return true;
-            addPopup = false;
-            return true;
-        }
+        // Add popup is handled in mouseClickedOverflow (runs before this)
 
         // Row 2: Playback mode (left) + Enabled (right)
         if (mouseY >= cy && mouseY < cy + 16) {
