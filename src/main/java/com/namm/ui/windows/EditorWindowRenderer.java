@@ -40,6 +40,13 @@ public class EditorWindowRenderer implements WindowContent {
     private EditBox nameBox = null;
     private boolean addPopup = false;
 
+    // Drag-and-drop state
+    private int dragIndex = -1;
+    private int dragTargetIndex = -1;
+    private int dragStartY = 0;
+    private boolean isDragging = false;
+    private static final int DRAG_THRESHOLD = 4;
+
     // Stored from last render() for hit testing
     private int renderX, renderY, renderWidth;
     // Step area top (after fixed controls)
@@ -199,6 +206,12 @@ public class EditorWindowRenderer implements WindowContent {
             }
         }
 
+        // Drag-and-drop insertion line
+        if (isDragging && dragTargetIndex >= 0 && dragTargetIndex <= steps.size()) {
+            int lineY = cy + (dragTargetIndex * ROW_HEIGHT);
+            g.fill(x + 4, lineY - 1, x + width - 4, lineY + 1, NammTheme.get().accent());
+        }
+
         // "+ Add Step"
         int addStepY = cy + (steps.size() * ROW_HEIGHT);
         boolean hoverAdd = mouseX >= x && mouseX < x + width
@@ -243,7 +256,8 @@ public class EditorWindowRenderer implements WindowContent {
                                int mouseX, int mouseY, float delta, double scrollOffset) {
         if (!addPopup || editingMacro == null) return;
         List<MacroStep> steps = editingMacro.getSteps();
-        int addStepY = stepAreaTop + (steps.size() * ROW_HEIGHT) - (int) scrollOffset;
+        // stepAreaTop already has scroll offset baked in from render(), no need to subtract again
+        int addStepY = stepAreaTop + (steps.size() * ROW_HEIGHT);
         renderAddPopup(g, mouseX, mouseY, addStepY);
     }
 
@@ -341,12 +355,11 @@ public class EditorWindowRenderer implements WindowContent {
                     return true;
                 }
                 if (mouseX >= renderX + 22 && mouseX < btnRight - 38) {
-                    MacroStep step = steps.get(i);
-                    if (step.getActionType() == ActionType.DELAY) {
-                        startDelayEdit(i, rowY);
-                    } else {
-                        recordingIndex = i;
-                    }
+                    // Start tracking potential drag (actual click handled in mouseReleased)
+                    dragIndex = i;
+                    dragStartY = mouseY;
+                    isDragging = false;
+                    dragTargetIndex = -1;
                     return true;
                 }
             }
@@ -407,6 +420,7 @@ public class EditorWindowRenderer implements WindowContent {
                 step.setActionType(ActionType.MOUSE_RELEASE);
             }
         }
+        autoPairRelease(editingMacro.getSteps(), recordingIndex, step);
         NammConfig.getInstance().save();
         recordingIndex = -1;
         return true;
@@ -429,19 +443,80 @@ public class EditorWindowRenderer implements WindowContent {
                 step.setActionType(ActionType.KEY_RELEASE);
             }
         }
+        autoPairRelease(editingMacro.getSteps(), recordingIndex, step);
         NammConfig.getInstance().save();
         recordingIndex = -1;
         return true;
     }
 
+    /** If the next step is a matching release with no key assigned, copy the key to it. */
+    private void autoPairRelease(List<MacroStep> steps, int pressIndex, MacroStep pressStep) {
+        if (pressIndex + 1 >= steps.size()) return;
+        MacroStep nextStep = steps.get(pressIndex + 1);
+        if (nextStep.getKeyCode() != -1) return; // already has a key assigned
+        boolean isMatchingRelease =
+            (pressStep.getActionType() == ActionType.KEY_PRESS && nextStep.getActionType() == ActionType.KEY_RELEASE) ||
+            (pressStep.getActionType() == ActionType.MOUSE_CLICK && nextStep.getActionType() == ActionType.MOUSE_RELEASE);
+        if (isMatchingRelease) {
+            nextStep.setKeyCode(pressStep.getKeyCode());
+            nextStep.setMouse(pressStep.isMouse());
+            // Also update action type if it was converted (e.g., KEY_RELEASE → MOUSE_RELEASE)
+            if (pressStep.getActionType() == ActionType.MOUSE_CLICK) {
+                nextStep.setActionType(ActionType.MOUSE_RELEASE);
+            } else if (pressStep.getActionType() == ActionType.KEY_PRESS) {
+                nextStep.setActionType(ActionType.KEY_RELEASE);
+            }
+        }
+    }
+
     @Override
-    public boolean mouseReleased(int x, int y, int button) { return false; }
+    public boolean mouseReleased(int x, int y, int button) {
+        if (dragIndex >= 0 && editingMacro != null) {
+            List<MacroStep> steps = editingMacro.getSteps();
+            if (isDragging && dragTargetIndex >= 0 && dragTargetIndex != dragIndex && dragTargetIndex != dragIndex + 1) {
+                // Perform the reorder
+                MacroStep moved = steps.remove(dragIndex);
+                int insertAt = dragTargetIndex > dragIndex ? dragTargetIndex - 1 : dragTargetIndex;
+                steps.add(insertAt, moved);
+                NammConfig.getInstance().save();
+            } else if (!isDragging) {
+                // Was a click, not a drag — handle as step click
+                if (dragIndex < steps.size()) {
+                    MacroStep step = steps.get(dragIndex);
+                    if (step.getActionType() == ActionType.DELAY) {
+                        int rowY = stepAreaTop + (dragIndex * ROW_HEIGHT);
+                        startDelayEdit(dragIndex, rowY);
+                    } else {
+                        recordingIndex = dragIndex;
+                    }
+                }
+            }
+            dragIndex = -1;
+            isDragging = false;
+            dragTargetIndex = -1;
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public boolean mouseScrolled(int x, int y, double amount) { return false; }
 
     @Override
-    public boolean mouseDragged(int x, int y, int button, double deltaX, double deltaY) { return false; }
+    public boolean mouseDragged(int x, int y, int button, double deltaX, double deltaY) {
+        if (dragIndex >= 0 && editingMacro != null) {
+            if (!isDragging && Math.abs(y - dragStartY) > DRAG_THRESHOLD) {
+                isDragging = true;
+            }
+            if (isDragging) {
+                // Compute insertion index based on mouse Y
+                int relY = y - stepAreaTop;
+                dragTargetIndex = Math.max(0, Math.min(editingMacro.getSteps().size(), (relY + ROW_HEIGHT / 2) / ROW_HEIGHT));
+            }
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
