@@ -5,6 +5,7 @@ import com.namm.model.Macro;
 import com.namm.model.MacroProfile;
 import com.namm.ui.InfoBar;
 import com.namm.ui.NammRenderer;
+import com.namm.ui.TargetHud;
 import com.namm.ui.NammTheme;
 import com.namm.ui.NammWindow;
 import com.namm.ui.NotificationSettingsScreen;
@@ -254,6 +255,9 @@ public class NammGuiScreen extends Screen {
 			settingsWindow.render(g, mouseX, mouseY, delta);
 		}
 
+		// Target HUD (draggable in menu)
+		TargetHud.get().renderDraggable(g, this.width, this.height, mouseX, mouseY);
+
 		// Info bar
 		InfoBar.get().render(g, this.width, this.height);
 
@@ -357,6 +361,9 @@ public class NammGuiScreen extends Screen {
 			return true;
 		}
 
+		// Target HUD drag
+		if (TargetHud.get().mousePressed(mouseX, mouseY, button)) return true;
+
 		// Recording mode in editor: capture mouse
 		if (editorRenderer.isRecording()) {
 			return editorRenderer.handleRecordingMouseClick(button);
@@ -416,6 +423,9 @@ public class NammGuiScreen extends Screen {
 		double mouseY = event.y();
 		int button = event.button();
 
+		// Target HUD drag
+		if (TargetHud.get().mouseDragged(mouseX, mouseY)) return true;
+
 		NammWindow dragged = null;
 		if (settingsWindowOpen && settingsWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = settingsWindow;
 		if (dragged == null && editorRenderer.getEditingMacro() != null && editorWindow.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) dragged = editorWindow;
@@ -469,6 +479,9 @@ public class NammGuiScreen extends Screen {
 		double mouseX = event.x();
 		double mouseY = event.y();
 		int button = event.button();
+
+		// Target HUD release
+		if (TargetHud.get().mouseReleased()) return true;
 
 		boolean anyReleased = false;
 

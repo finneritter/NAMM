@@ -7,15 +7,19 @@ import com.namm.input.TriggerKeyHandler;
 import com.namm.model.MacroProfile;
 import com.namm.ui.ArrayListHud;
 import com.namm.ui.InfoBar;
+import com.namm.ui.TargetHud;
 import com.namm.ui.ToastManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +68,17 @@ public class NammMod implements ClientModInitializer {
 			}
 		});
 
+		// Register Target HUD tick
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.player != null) TargetHud.get().tick();
+		});
+
+		// Register attack callback for sticky targeting
+		AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+			if (entity instanceof Player target) TargetHud.get().onAttackEntity(target);
+			return InteractionResult.PASS;
+		});
+
 		// Register HUD callback to render toasts and info bar outside the menu
 		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> {
 			Minecraft mc = Minecraft.getInstance();
@@ -75,6 +90,11 @@ public class NammMod implements ClientModInitializer {
 
 			// Always render toasts
 			ToastManager.get().render(graphics, w, h);
+
+			// Render target HUD outside menu
+			if (!(mc.screen instanceof NammGuiScreen)) {
+				TargetHud.get().render(graphics, w, h);
+			}
 
 			// Render info bar if always-visible and not in NAMM screen
 			if (InfoBar.get().isAlwaysVisible() && !(mc.screen instanceof NammGuiScreen)) {

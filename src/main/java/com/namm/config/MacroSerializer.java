@@ -142,5 +142,8 @@ public class MacroSerializer {
 		public boolean notifProfileSwitched = true;
 		public boolean notifImportExport = true;
 		public boolean notifErrors = true;
+		public boolean targetHudEnabled = true;
+		public int targetHudX = -1;
+		public int targetHudY = -1;
 	}
 }

@@ -14,7 +14,7 @@ import net.minecraft.client.gui.screens.Screen;
  */
 public class SettingsWindowRenderer implements WindowContent {
 	private static final int ROW_HEIGHT = NammWindow.ROW_HEIGHT;
-	private static final int ROW_COUNT = 7;
+	private static final int ROW_COUNT = 8;
 
 	private static final String[] ACCENT_COLORS = {"purple", "blue", "green", "red", "orange", "white"};
 	private static final String[] POSITIONS = {"top_right", "top_left", "bottom_right", "bottom_left"};
@@ -54,8 +54,11 @@ public class SettingsWindowRenderer implements WindowContent {
 		// Row 5: Info Bar
 		drawSettingsRow(g, x, y, width, 5, mouseX, mouseY, "Info Bar", "always".equals(cfg.getInfoBarVisibility()) ? "Always" : "Menu");
 
-		// Row 6: Notifications...
-		int rowY = y + 6 * ROW_HEIGHT;
+		// Row 6: Target HUD toggle
+		drawSettingsRow(g, x, y, width, 6, mouseX, mouseY, "Target HUD", cfg.isTargetHudEnabled() ? "ON" : "OFF");
+
+		// Row 7: Notifications...
+		int rowY = y + 7 * ROW_HEIGHT;
 		boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT;
 		NammRenderer.drawRow(g, x, rowY, width, ROW_HEIGHT, hovered);
 		NammRenderer.drawText(g, x + 4, rowY + 4, "Notifications...", true);
@@ -113,7 +116,11 @@ public class SettingsWindowRenderer implements WindowContent {
 				cfg.setInfoBarVisibility("always".equals(v) ? "menu_only" : "always");
 				cfg.save();
 			}
-			case 6 -> { // Notifications...
+			case 6 -> { // Target HUD toggle
+				cfg.setTargetHudEnabled(!cfg.isTargetHudEnabled());
+				cfg.save();
+			}
+			case 7 -> { // Notifications...
 				notificationSettingsRequested = true;
 			}
 		}

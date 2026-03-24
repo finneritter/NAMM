@@ -35,6 +35,10 @@ public class NammConfig {
 	private boolean arrayListShowMacros = true;
 	private boolean arrayListShowChatCommands = true;
 
+	// Target HUD
+	private boolean targetHudEnabled = true;
+	private int targetHudX = -1, targetHudY = -1;
+
 	// Accent color
 	private String accentColor = "purple";
 
@@ -89,6 +93,9 @@ public class NammConfig {
 		notifProfileSwitched = wrapper.notifProfileSwitched;
 		notifImportExport = wrapper.notifImportExport;
 		notifErrors = wrapper.notifErrors;
+		targetHudEnabled = wrapper.targetHudEnabled;
+		targetHudX = wrapper.targetHudX;
+		targetHudY = wrapper.targetHudY;
 		NammMod.LOGGER.info("Loaded {} macros, {} profiles, {} chat commands", macros.size(), profiles.size(), chatCommands.size());
 	}
 
@@ -121,6 +128,9 @@ public class NammConfig {
 		wrapper.notifProfileSwitched = notifProfileSwitched;
 		wrapper.notifImportExport = notifImportExport;
 		wrapper.notifErrors = notifErrors;
+		wrapper.targetHudEnabled = targetHudEnabled;
+		wrapper.targetHudX = targetHudX;
+		wrapper.targetHudY = targetHudY;
 		MacroSerializer.saveWrapper(wrapper, configPath);
 	}
 
@@ -183,4 +193,10 @@ public class NammConfig {
 	public int getSettingsWinX() { return settingsWinX; }
 	public int getSettingsWinY() { return settingsWinY; }
 	public void setSettingsWinPos(int x, int y) { settingsWinX = x; settingsWinY = y; }
+
+	public boolean isTargetHudEnabled() { return targetHudEnabled; }
+	public void setTargetHudEnabled(boolean v) { this.targetHudEnabled = v; }
+	public int getTargetHudX() { return targetHudX; }
+	public int getTargetHudY() { return targetHudY; }
+	public void setTargetHudPos(int x, int y) { targetHudX = x; targetHudY = y; }
 }
