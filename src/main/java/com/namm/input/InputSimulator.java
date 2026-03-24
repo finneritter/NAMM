@@ -5,6 +5,7 @@ import com.namm.model.ActionType;
 import com.namm.model.MacroStep;
 import net.minecraft.client.KeyMapping;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,23 +15,28 @@ public class InputSimulator {
 	// Track all keys currently held down by macro simulation
 	private static final Set<InputConstants.Key> pressedKeys = ConcurrentHashMap.newKeySet();
 
+	// Cache key lookups to avoid repeated map lookups in tight macro loops
+	private static final Map<Integer, InputConstants.Key> keyCache = new ConcurrentHashMap<>();
+	private static final Map<Integer, InputConstants.Key> mouseCache = new ConcurrentHashMap<>();
+
+	// Pre-cache ordinals for hot-path enum comparison
+	private static final int ORD_KEY_PRESS = ActionType.KEY_PRESS.ordinal();
+	private static final int ORD_MOUSE_CLICK = ActionType.MOUSE_CLICK.ordinal();
+
 	public static boolean isSimulating() {
 		return simulating;
 	}
 
 	public static void simulate(MacroStep step) {
-		if (step.getActionType() == ActionType.DELAY) return;
 		simulating = true;
 		try {
-			InputConstants.Key key;
-			if (step.isMouse()) {
-				key = InputConstants.Type.MOUSE.getOrCreate(step.getKeyCode());
-			} else {
-				key = InputConstants.Type.KEYSYM.getOrCreate(step.getKeyCode());
-			}
+			int keyCode = step.getKeyCode();
+			InputConstants.Key key = step.isMouse()
+					? mouseCache.computeIfAbsent(keyCode, InputConstants.Type.MOUSE::getOrCreate)
+					: keyCache.computeIfAbsent(keyCode, InputConstants.Type.KEYSYM::getOrCreate);
 
-			boolean press = step.getActionType() == ActionType.KEY_PRESS
-					|| step.getActionType() == ActionType.MOUSE_CLICK;
+			int ordinal = step.getActionType().ordinal();
+			boolean press = ordinal == ORD_KEY_PRESS || ordinal == ORD_MOUSE_CLICK;
 
 			KeyMapping.set(key, press);
 

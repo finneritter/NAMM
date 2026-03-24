@@ -10,12 +10,14 @@ import com.namm.ui.ToastManager;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.IdentityHashMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TriggerKeyHandler {
 	private final Map<String, Boolean> previousKeyState = new HashMap<>();
-	private final Map<String, Boolean> previousChatKeyState = new HashMap<>();
+	private final IdentityHashMap<ChatCommand, Boolean> previousChatKeyState = new IdentityHashMap<>();
 
 	public void onClientTick(Minecraft client) {
 		// In-game guard: only process when player is in-game with no screen open
@@ -28,12 +30,20 @@ public class TriggerKeyHandler {
 			return;
 		}
 
+		NammConfig config = NammConfig.getInstance();
+		List<Macro> macros = config.getMacros();
+		List<ChatCommand> chatCommands = config.getChatCommands();
+
+		// Fast path: nothing to process
+		if (macros.isEmpty() && chatCommands.isEmpty()) {
+			return;
+		}
+
 		long window = client.getWindow().handle();
 		MacroPlaybackState playbackState = MacroPlaybackState.getInstance();
-		NammConfig config = NammConfig.getInstance();
 		MacroProfile activeProfile = config.getActiveProfile();
 
-		for (Macro macro : config.getMacros()) {
+		for (Macro macro : macros) {
 			if (!macro.isEnabled() || macro.getTriggerKeyCode() == -1) {
 				continue;
 			}
@@ -58,13 +68,6 @@ public class TriggerKeyHandler {
 					break;
 
 				case TOGGLE_LOOP:
-					if (risingEdge) {
-						playbackState.startMacro(macro, true);
-					} else if (fallingEdge) {
-						playbackState.stopMacro(macro.getName());
-					}
-					break;
-
 				case HOLD_TO_PLAY:
 					if (risingEdge) {
 						playbackState.startMacro(macro, true);
@@ -76,17 +79,15 @@ public class TriggerKeyHandler {
 		}
 
 		// Chat command triggers
-		for (ChatCommand cmd : config.getChatCommands()) {
+		for (ChatCommand cmd : chatCommands) {
 			if (!cmd.isEnabled() || cmd.getTriggerKeyCode() == -1) {
 				continue;
 			}
 
-			String key = "cmd:" + cmd.getName();
 			boolean currentlyPressed = isKeyPressed(window, cmd.getTriggerKeyCode(), cmd.isTriggerMouse());
-			boolean wasPressed = previousChatKeyState.getOrDefault(key, false);
-			previousChatKeyState.put(key, currentlyPressed);
+			Boolean wasPressed = previousChatKeyState.put(cmd, currentlyPressed);
 
-			if (currentlyPressed && !wasPressed) {
+			if (currentlyPressed && (wasPressed == null || !wasPressed)) {
 				String message = cmd.getMessage();
 				if (message != null && !message.isEmpty()) {
 					if (message.startsWith("/")) {
