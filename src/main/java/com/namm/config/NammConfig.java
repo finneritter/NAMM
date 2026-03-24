@@ -39,6 +39,9 @@ public class NammConfig {
 	private boolean targetHudEnabled = true;
 	private int targetHudX = -1, targetHudY = -1;
 
+	// Delay variability (0-5, 0 = exact, higher = more randomization)
+	private int delayVariability = 0;
+
 	// Accent color
 	private String accentColor = "purple";
 
@@ -96,6 +99,7 @@ public class NammConfig {
 		targetHudEnabled = wrapper.targetHudEnabled;
 		targetHudX = wrapper.targetHudX;
 		targetHudY = wrapper.targetHudY;
+		delayVariability = Math.max(0, Math.min(5, wrapper.delayVariability));
 		NammMod.LOGGER.info("Loaded {} macros, {} profiles, {} chat commands", macros.size(), profiles.size(), chatCommands.size());
 	}
 
@@ -131,6 +135,7 @@ public class NammConfig {
 		wrapper.targetHudEnabled = targetHudEnabled;
 		wrapper.targetHudX = targetHudX;
 		wrapper.targetHudY = targetHudY;
+		wrapper.delayVariability = delayVariability;
 		MacroSerializer.saveWrapper(wrapper, configPath);
 	}
 
@@ -199,4 +204,7 @@ public class NammConfig {
 	public int getTargetHudX() { return targetHudX; }
 	public int getTargetHudY() { return targetHudY; }
 	public void setTargetHudPos(int x, int y) { targetHudX = x; targetHudY = y; }
+
+	public int getDelayVariability() { return delayVariability; }
+	public void setDelayVariability(int v) { this.delayVariability = Math.max(0, Math.min(5, v)); }
 }

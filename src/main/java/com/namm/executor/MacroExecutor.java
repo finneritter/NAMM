@@ -1,15 +1,20 @@
 package com.namm.executor;
 
 import com.namm.NammMod;
+import com.namm.config.NammConfig;
 import com.namm.input.InputSimulator;
 import com.namm.model.ActionType;
 import com.namm.model.Macro;
 import com.namm.model.MacroStep;
 import net.minecraft.client.Minecraft;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public class MacroExecutor implements Runnable {
 	private static final long SLEEP_THRESHOLD_NS = 2_000_000L; // 2ms in nanos
 	private static final long MS_TO_NS = 1_000_000L;
+	// Max variance per level (ms): 0=0, 1=3, 2=8, 3=15, 4=25, 5=40
+	private static final int[] VARIANCE_CAPS = {0, 3, 8, 15, 25, 40};
 
 	private final Macro macro;
 	private final boolean loop;
@@ -28,7 +33,12 @@ public class MacroExecutor implements Runnable {
 					if (Thread.interrupted()) return;
 
 					if (step.getActionType() == ActionType.DELAY) {
-						preciseDelay(Math.max(20, step.getDelayMs()));
+						long base = Math.max(20, step.getDelayMs());
+						int level = NammConfig.getInstance().getDelayVariability();
+						if (level > 0 && level < VARIANCE_CAPS.length) {
+							base += ThreadLocalRandom.current().nextInt(VARIANCE_CAPS[level] + 1);
+						}
+						preciseDelay(base);
 						continue;
 					}
 

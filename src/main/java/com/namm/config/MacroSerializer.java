@@ -145,5 +145,6 @@ public class MacroSerializer {
 		public boolean targetHudEnabled = true;
 		public int targetHudX = -1;
 		public int targetHudY = -1;
+		public int delayVariability = 0;
 	}
 }

@@ -14,7 +14,7 @@ import net.minecraft.client.gui.screens.Screen;
  */
 public class SettingsWindowRenderer implements WindowContent {
 	private static final int ROW_HEIGHT = NammWindow.ROW_HEIGHT;
-	private static final int ROW_COUNT = 8;
+	private static final int ROW_COUNT = 9;
 
 	private static final String[] ACCENT_COLORS = {"purple", "blue", "green", "red", "orange", "white"};
 	private static final String[] POSITIONS = {"top_right", "top_left", "bottom_right", "bottom_left"};
@@ -57,8 +57,25 @@ public class SettingsWindowRenderer implements WindowContent {
 		// Row 6: Target HUD toggle
 		drawSettingsRow(g, x, y, width, 6, mouseX, mouseY, "Target HUD", cfg.isTargetHudEnabled() ? "ON" : "OFF");
 
-		// Row 7: Notifications...
-		int rowY = y + 7 * ROW_HEIGHT;
+		// Row 7: Delay Variance slider
+		int varLevel = cfg.getDelayVariability();
+		String varLabel = varLevel == 0 ? "OFF" : varLevel + "/5";
+		int row7Y = y + 7 * ROW_HEIGHT;
+		boolean row7Hover = mouseX >= x && mouseX < x + width && mouseY >= row7Y && mouseY < row7Y + ROW_HEIGHT;
+		NammRenderer.drawRow(g, x, row7Y, width, ROW_HEIGHT, row7Hover);
+		NammRenderer.drawText(g, x + 4, row7Y + 4, "Delay Variance", true);
+		// Draw slider bar
+		int barX = x + width - 54;
+		int barW = 40;
+		int barY = row7Y + 7;
+		int barH = 3;
+		g.fill(barX, barY, barX + barW, barY + barH, t.toggleOff());
+		int fillW = varLevel * barW / 5;
+		if (fillW > 0) g.fill(barX, barY, barX + fillW, barY + barH, t.accent());
+		NammRenderer.drawTextRight(g, x + width - 4, row7Y + 4, varLabel, false);
+
+		// Row 8: Notifications...
+		int rowY = y + 8 * ROW_HEIGHT;
 		boolean hovered = mouseX >= x && mouseX < x + width && mouseY >= rowY && mouseY < rowY + ROW_HEIGHT;
 		NammRenderer.drawRow(g, x, rowY, width, ROW_HEIGHT, hovered);
 		NammRenderer.drawText(g, x + 4, rowY + 4, "Notifications...", true);
@@ -120,7 +137,11 @@ public class SettingsWindowRenderer implements WindowContent {
 				cfg.setTargetHudEnabled(!cfg.isTargetHudEnabled());
 				cfg.save();
 			}
-			case 7 -> { // Notifications...
+			case 7 -> { // Delay Variance - cycle 0-5
+				cfg.setDelayVariability((cfg.getDelayVariability() + 1) % 6);
+				cfg.save();
+			}
+			case 8 -> { // Notifications...
 				notificationSettingsRequested = true;
 			}
 		}
