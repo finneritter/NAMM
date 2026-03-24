@@ -3,7 +3,7 @@
 	"id": "namm",
 	"version": "${version}",
 	"name": "NAMM",
-	"description": "Not Another Macro Mod - Razer Synapse-style macro creation for Minecraft",
+	"description": "Minecraft PvP utility mod with macros, target HUD, and hacked-client-style UI",
 	"authors": [
 		"finnritter"
 	],

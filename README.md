@@ -1,21 +1,40 @@
 # NAMM — Not Another Macro Mod
 
-A client-side Fabric macro mod for Minecraft 1.21.11 with a hacked-client-style UI. Create, edit, and trigger macros with a Razer Synapse-style step builder, draggable windows, and an in-game HUD.
+A client-side Fabric utility mod for Minecraft 1.21.11 PvP and general gameplay. Features a hacked-client-style UI with macros, a target HUD, draggable windows, and an always-on-screen array list.
 
 ## Features
 
+### Target HUD
+- **On-screen opponent info panel** — shows health bar, armor slots, totem indicator, and active potion effects for the player you're looking at or recently hit
+- **Crosshair + sticky targeting** — locks onto players in your crosshair; attacking a player resets the 3-second timeout
+- **Draggable positioning** — open the NAMM menu and drag the Target HUD anywhere on screen; position persists across sessions
+- **Toggle on/off** in the Settings window
+
+### Macros
 - **Manual step builder** — add key presses, mouse clicks, and delays with precise control
 - **Playback modes** — Play Once, Toggle Loop, and Hold to Play
-- **Profiles** — group macros into switchable profiles with keybind cycling
-- **Chat Commands** — bind chat messages and `/slash` commands to a single keypress
-- **Array List HUD** — always-on-screen display of enabled macros/commands in accent color, sorted by width
-- **Draggable windows** — five collapsible windows (Macros, Profiles, Editor, Chat Commands, Settings) with snap-to-column alignment
-- **Settings window** — customizable accent color, array list position/visibility, info bar options
-- **Toast notifications** — configurable per-category notifications with an "All" toggle
-- **Info bar** — compact HUD pill showing player head, name, active profile, and time
+- **Drag-and-drop step reordering** with auto-paired press/release inputs
+
+### Profiles
+- **Switchable macro groups** — organize which macros are active per profile
+- **Keybind cycling** — cycle through profiles with configurable keybinds
+
+### Chat Commands
+- Bind any chat message or `/slash` command to a single keypress
+
+### HUD Elements
+- **Array List** — always-on-screen display of enabled macros/commands in accent color, sorted by width; position configurable to any corner
+- **Info Bar** — compact pill showing player head, name, active profile, and time; always-visible or menu-only
+- **Toast notifications** — configurable per-category (macro toggled, chat command, profile switched, import/export, errors)
+
+### UI
+- **Draggable windows** — five collapsible windows (Macros, Profiles, Editor, Chat Commands, Settings) with snap alignment
+- **Accent colors** — Purple, Blue, Green, Red, Orange, or White
+- **Custom font** — bundled Inter TTF for crisp text rendering
 - **Import/Export** — save and load macros as JSON, or import from Razer Synapse XML
-- **Custom font** — bundled Inter TTF for high-resolution text rendering
-- **Config persistence** — all settings, macros, profiles, and window positions saved to `config/namm.json`
+
+### Config
+- All settings, macros, profiles, window positions, and HUD positions saved to `config/namm.json`
 
 ## Requirements
 
@@ -36,37 +55,11 @@ A client-side Fabric macro mod for Minecraft 1.21.11 with a hacked-client-style 
 
 Press **Right Shift** (default, rebindable in Controls) to open the NAMM menu.
 
-### Macros
-- **Left-click** a macro to toggle it on/off (or toggle its profile state if a profile is active)
+- **Left-click** a macro to toggle it on/off
 - **Right-click** a macro to edit or delete it
 - In the editor: set a name, playback mode, trigger key, and build your step sequence
-- Steps support key press/release, mouse click/release, and configurable delays
-
-### Profiles
-- Create profiles to organize which macros are active
-- Click a profile to activate/deactivate it
-- Expand a profile to toggle individual macros within it
-- **Cycle profiles** via configurable keybinds (set in Minecraft Controls > NAMM)
-
-### Chat Commands
-- Bind any chat message or `/command` to a key
-- Commands starting with `/` are sent as slash commands; everything else is sent as chat
-
-### Array List
-- Displays enabled macros and/or chat commands on the HUD at all times
-- Position configurable (any corner) via the Settings window
-- Toggle visibility and content filters in Settings
-
-### Settings
-- Click "Settings" in the bottom bar to open the settings window
-- **Accent Color** — choose from Purple, Blue, Green, Red, Orange, or White
-- **Array List** — toggle on/off, change position, filter macros/commands
-- **Info Bar** — always visible or menu-only
-
-### Notifications
-- Click "Notifications" in the bottom bar to configure toast notifications
-- **All** toggle enables/disables all categories at once
-- Individual toggles for: Macro Toggled, Chat Command, Profile Switched, Import/Export, Errors
+- Open **Settings** from the bottom bar to configure accent color, array list, info bar, and Target HUD
+- Open **Notifications** from the bottom bar to configure toast categories
 
 ## Building from Source
 
